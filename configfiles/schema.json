@@ -1,0 +1,64 @@
+{
+    "user": {
+        "id": {
+            "name": "Id",
+            "type": "id"
+        },
+        "timeId": {
+            "name": "Time ID",
+            "type": "text",
+            "ignore": true
+        },
+        "name": {
+            "name": "Name",
+            "type": "text"
+        },
+        "firstName": {
+            "name": "First Name",
+            "type": "text"
+        },
+        "lastName": {
+            "name": "Last Name",
+            "type": "text"
+        },
+        "active": {
+            "name": "Active",
+            "subType": "boolean",
+            "readonly": false
+        },
+        "email": {
+            "name": "Email",
+            "subType": "email"
+        },
+        "lastActive": {
+            "name": "Last Active",
+            "type": "date"
+        },
+        "groupId": {
+            "name": "Group ID",
+            "type": "text",
+            "relation": {
+                "cardinality": "many-to-one",
+                "name": "Group",
+                "targetName": "Users",
+                "targetType": "group",
+                "targetFieldId": "timeId"
+            }
+        }
+    },
+    "group": {
+        "id": {
+            "name": "Id",
+            "type": "id"
+        },
+        "timeId": {
+            "name": "Time ID",
+            "type": "text",
+            "ignore": true
+        },
+        "name": {
+            "name": "Name",
+            "type": "text"
+        }
+    }
+}

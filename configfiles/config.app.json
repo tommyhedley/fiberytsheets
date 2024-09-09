@@ -1,0 +1,25 @@
+{
+    "id": "qbtime",
+    "name": "Quickbooks Time",
+    "version": "0.1.0",
+    "description": "Integrate Quickbooks Time with Fibery",
+    "authentication": [
+        {
+            "id": "oauth2",
+            "name": "OAuth v2 Authentication",
+            "description": "OAuth v2-based authentication and authorization for access to Quickbooks Time",
+            "fields": [
+                {
+                    "title": "callback_uri",
+                    "description": "OAuth post-auth redirect URI",
+                    "type": "oauth",
+                    "id": "callback_uri"
+                }
+            ]
+        }
+    ],
+    "sources": [],
+    "responsibleFor": {
+        "dataSynchronization": true
+    }
+}

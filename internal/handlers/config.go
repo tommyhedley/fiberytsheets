@@ -1,8 +1,10 @@
 package handlers
 
 import (
-	"encoding/json"
+	"fmt"
 	"net/http"
+
+	"github.com/tommyhedley/fiberytsheets/internal/utils"
 )
 
 type Authentication struct {
@@ -37,7 +39,7 @@ func Config(w http.ResponseWriter, r *http.Request) {
 	oauth2 := Oauth2Fields{
 		Title:       "callback_uri",
 		Description: "OAuth post-auth redirect URI",
-		Type:        "oauth2",
+		Type:        "oauth",
 		Id:          "callback_uri",
 	}
 
@@ -50,7 +52,7 @@ func Config(w http.ResponseWriter, r *http.Request) {
 			{
 				ID:          "oauth2",
 				Name:        "OAuth v2 Authentication",
-				Description: "OAuth v2-based authentication and authorization for access to TSheets",
+				Description: "OAuth v2-based authentication and authorization for access to Quickbooks Time",
 				Fields:      []interface{}{oauth2},
 			},
 		},
@@ -60,15 +62,6 @@ func Config(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	res, err := json.MarshalIndent(config, "", "	")
-	if err != nil {
-		http.Error(w, "Error marshalling config", http.StatusInternalServerError)
-		return
-	}
-
-	// Set the content type to application/json.
-	w.Header().Set("Content-Type", "application/json")
-
-	// Write the JSON data to the response.
-	w.Write(res)
+	utils.RespondWithJSON(w, http.StatusOK, config)
+	fmt.Println("Config Returned")
 }

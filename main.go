@@ -7,6 +7,8 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/tommyhedley/fiberytsheets/internal/handlers"
+	"github.com/tommyhedley/fiberytsheets/internal/handlers/oauth2"
+	"github.com/tommyhedley/fiberytsheets/internal/handlers/syncronizer"
 )
 
 func main() {
@@ -16,9 +18,14 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/healthz", handlers.Readiness)
 	mux.HandleFunc("GET /", handlers.Config)
-	mux.HandleFunc("POST /oauth2/v1/authorize", handlers.Authorize)
-	mux.HandleFunc("POST /oauth2/v1/access_token", handlers.GetToken)
-	mux.HandleFunc("POST /validate", handlers.ValidateRefresh)
+	mux.HandleFunc("GET /logo", handlers.Logo)
+
+	mux.HandleFunc("POST /oauth2/v1/authorize", oauth2.Authorize)
+	mux.HandleFunc("POST /oauth2/v1/access_token", oauth2.GetToken)
+	mux.HandleFunc("POST /validate", oauth2.Refresh)
+
+	mux.HandleFunc("POST /api/v1/synchronizer/config", syncronizer.Config)
+	mux.HandleFunc("POST /api/v1/synchronizer/schema", syncronizer.Schema)
 
 	srv := &http.Server{
 		Addr:    ":" + port,

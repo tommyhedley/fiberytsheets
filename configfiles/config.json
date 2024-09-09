@@ -1,0 +1,12 @@
+{
+    "types:": [
+        {
+            "id": "user",
+            "name": "User"
+        },
+        {
+            "id": "group",
+            "name": "Group"
+        }
+    ]
+}

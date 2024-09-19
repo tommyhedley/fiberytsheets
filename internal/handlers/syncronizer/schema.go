@@ -7,6 +7,16 @@ import (
 	"github.com/tommyhedley/fiberytsheets/internal/utils"
 )
 
+type FieldType string
+
+const (
+	Id        FieldType = "id"
+	Text      FieldType = "text"
+	Number    FieldType = "number"
+	Date      FieldType = "date"
+	TextArray FieldType = "array[text]"
+)
+
 type Relation struct {
 	Cardinality   string `json:"cardinality"`
 	Name          string `json:"name"`
@@ -42,25 +52,21 @@ func Schema(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users := map[string]Field{
+	user := map[string]Field{
 		"id": {
 			Name: "Id",
 			Type: "id",
 		},
-		"timeId": {
-			Name:   "Time ID",
-			Type:   "text",
-			Ignore: true,
+		"display_name": {
+			Name:    "Name",
+			Type:    "text",
+			SubType: "title",
 		},
-		"name": {
-			Name: "Name",
-			Type: "text",
-		},
-		"firstName": {
+		"first_name": {
 			Name: "First Name",
 			Type: "text",
 		},
-		"lastName": {
+		"last_name": {
 			Name: "Last Name",
 			Type: "text",
 		},
@@ -73,19 +79,23 @@ func Schema(w http.ResponseWriter, r *http.Request) {
 			Name:    "Email",
 			SubType: "email",
 		},
-		"lastActive": {
+		"last_active": {
 			Name: "Last Active",
 			Type: "date",
 		},
-		"groupId": {
+		"__syncAction": {
+			Type: "text",
+			Name: "Sync Action",
+		},
+		"group_id": {
 			Name: "Group ID",
 			Type: "text",
 			Relation: &Relation{
-				Cardinality:   "many-to-one",
+				Cardinality:   "many-to-many",
 				Name:          "Group",
 				TargetName:    "Users",
 				TargetType:    "group",
-				TargetFieldID: "timeId",
+				TargetFieldID: "id",
 			},
 		},
 	}
@@ -95,19 +105,23 @@ func Schema(w http.ResponseWriter, r *http.Request) {
 			Name: "Id",
 			Type: "id",
 		},
-		"timeId": {
-			Name:   "Time ID",
-			Type:   "text",
-			Ignore: true,
-		},
 		"name": {
 			Name: "Name",
 			Type: "text",
 		},
+		"active": {
+			Name:     "Active",
+			SubType:  "boolean",
+			ReadOnly: false,
+		},
+		"__syncAction": {
+			Type: "text",
+			Name: "Sync Action",
+		},
 	}
 
 	allType := map[string]map[string]Field{
-		"users": users,
+		"user":  user,
 		"group": group,
 	}
 

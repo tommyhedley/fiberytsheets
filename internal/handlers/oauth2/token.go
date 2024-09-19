@@ -9,26 +9,36 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/go-querystring/query"
 	"github.com/tommyhedley/fiberytsheets/internal/utils"
 )
 
-func GetToken(w http.ResponseWriter, r *http.Request) {
+type AccessTokenRequest struct {
+	GrantType    string `url:"grant_type"`
+	ClientId     string `url:"client_id"`
+	ClientSecret string `url:"client_secret"`
+	Code         string `url:"code"`
+	RedirectURI  string `url:"redirect_uri"`
+}
+
+type AccessTokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	ExpiresIn    int    `json:"expires_in"`
+	TokenType    string `json:"token_type"`
+	Scope        string `json:"scope"`
+	RefreshToken string `json:"refresh_token"`
+	UserID       string `json:"user_id"`
+	CompanyID    string `json:"company_id"`
+	ClientURL    string `json:"client_url"`
+	ClientType   string `json:"client_type"`
+}
+
+func TokenHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Fields struct {
 			CallbackURI string `json:"callback_uri"`
 		} `json:"fields"`
 		Code string `json:"code"`
-	}
-	type innerResponse struct {
-		AccessToken  string `json:"access_token"`
-		ExpiresIn    int    `json:"expires_in"`
-		TokenType    string `json:"token_type"`
-		Scope        string `json:"scope"`
-		RefreshToken string `json:"refresh_token"`
-		UserID       string `json:"user_id"`
-		CompanyID    string `json:"company_id"`
-		ClientURL    string `json:"client_url"`
-		ClientType   string `json:"client_type"`
 	}
 	type response struct {
 		AccessToken  string `json:"access_token"`
@@ -40,55 +50,65 @@ func GetToken(w http.ResponseWriter, r *http.Request) {
 	params := parameters{}
 	err := decoder.Decode(&params)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("couldn't decode request body: %v", err))
+		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("unable to decode request parameters: %v", err))
 		return
 	}
 
-	baseURL, err := url.Parse("https://rest.tsheets.com/api/v1/grant")
+	requestParams := AccessTokenRequest{
+		GrantType:    "authorization_code",
+		ClientId:     os.Getenv("TSHEETS_OAUTH_CLIENT_ID"),
+		ClientSecret: os.Getenv("TSHEETS_OAUTH_CLIENT_SECRET"),
+		Code:         params.Code,
+		RedirectURI:  params.Fields.CallbackURI,
+	}
+
+	accessToken, err := requestParams.GetToken("https://rest.tsheets.com/api/v1/grant")
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "invalid base URL")
+		utils.RespondWithError(w, http.StatusBadRequest, fmt.Sprintf("error with access token request: %v", err))
 		return
 	}
 
-	body := url.Values{}
-	body.Add("grant_type", "authorization_code")
-	body.Add("client_id", os.Getenv("TSHEETS_OAUTH_CLIENT_ID"))
-	body.Add("client_secret", os.Getenv("TSHEETS_OAUTH_CLIENT_SECRET"))
-	body.Add("code", params.Code)
-	body.Add("redirect_uri", params.Fields.CallbackURI)
+	utils.RespondWithJSON(w, http.StatusOK, response{
+		AccessToken:  accessToken.AccessToken,
+		RefreshToken: accessToken.RefreshToken,
+		ExpiresOn:    time.Now().UTC().Add(time.Duration(accessToken.ExpiresIn) * time.Second).Format(time.RFC3339),
+	})
+}
+
+func (params *AccessTokenRequest) GetToken(URL string) (AccessTokenResponse, error) {
+	baseURL, err := url.Parse(URL)
+	if err != nil {
+		return AccessTokenResponse{}, fmt.Errorf("error parsing base url: %w", err)
+	}
+
+	body, err := query.Values(params)
+	if err != nil {
+		return AccessTokenResponse{}, fmt.Errorf("error extracting query struct values: %w", err)
+	}
 
 	req, err := http.NewRequest("POST", baseURL.String(), strings.NewReader(body.Encode()))
 	if err != nil {
-		utils.RespondWithError(w, http.StatusUnauthorized, fmt.Sprintf("error creating request: %v", err))
-		return
+		return AccessTokenResponse{}, fmt.Errorf("error creating request: %w", err)
 	}
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusUnauthorized, fmt.Sprintf("error executing request: %v", err))
-		return
+		return AccessTokenResponse{}, fmt.Errorf("error executing request: %w", err)
 	}
 
 	defer res.Body.Close()
 
-	if res.StatusCode > 200 {
-		utils.RespondWithError(w, http.StatusBadRequest, fmt.Sprintf("request failed with error: %v", res.StatusCode))
-		return
+	if res.StatusCode > 299 {
+		return AccessTokenResponse{}, fmt.Errorf("request error: %d", res.StatusCode)
 	}
 
-	resDecoder := json.NewDecoder(res.Body)
-	innerRes := innerResponse{}
-	err = resDecoder.Decode(&innerRes)
+	decoder := json.NewDecoder(res.Body)
+	var resp AccessTokenResponse
+	err = decoder.Decode(&resp)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("couldn't decode response body: %v", err))
-		return
+		return AccessTokenResponse{}, fmt.Errorf("unable to decode response: %w", err)
 	}
-
-	utils.RespondWithJSON(w, http.StatusOK, response{
-		AccessToken:  innerRes.AccessToken,
-		RefreshToken: innerRes.RefreshToken,
-		ExpiresOn:    time.Now().UTC().Add(time.Duration(innerRes.ExpiresIn) * time.Second).Format(time.RFC3339),
-	})
+	return resp, nil
 }

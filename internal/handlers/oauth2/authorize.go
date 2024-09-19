@@ -2,6 +2,7 @@ package oauth2
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -9,7 +10,7 @@ import (
 	"github.com/tommyhedley/fiberytsheets/internal/utils"
 )
 
-func Authorize(w http.ResponseWriter, r *http.Request) {
+func AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		CallbackURI string `json:"callback_uri"`
 		State       string `json:"state"`
@@ -21,13 +22,13 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 	params := parameters{}
 	err := decoder.Decode(&params)
 	if err != nil {
-		utils.RespondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters")
+		utils.RespondWithError(w, http.StatusInternalServerError, fmt.Sprintf("unable to decode request parameters: %v", err))
 		return
 	}
 
 	redirectURI, err := url.Parse("https://rest.tsheets.com/api/v1/authorize")
 	if err != nil {
-		utils.RespondWithError(w, http.StatusUnauthorized, "unable to parse base url")
+		utils.RespondWithError(w, http.StatusUnauthorized, fmt.Sprintf("error parsing base url: %v", err))
 		return
 	}
 

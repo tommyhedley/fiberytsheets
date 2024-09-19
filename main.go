@@ -20,12 +20,14 @@ func main() {
 	mux.HandleFunc("GET /", handlers.Config)
 	mux.HandleFunc("GET /logo", handlers.Logo)
 
-	mux.HandleFunc("POST /oauth2/v1/authorize", oauth2.Authorize)
-	mux.HandleFunc("POST /oauth2/v1/access_token", oauth2.GetToken)
-	mux.HandleFunc("POST /validate", oauth2.Refresh)
+	mux.HandleFunc("POST /oauth2/v1/authorize", oauth2.AuthorizeHandler)
+	mux.HandleFunc("POST /oauth2/v1/access_token", oauth2.TokenHandler)
+	mux.HandleFunc("POST /validate", oauth2.ValidateHandler)
 
 	mux.HandleFunc("POST /api/v1/synchronizer/config", syncronizer.Config)
 	mux.HandleFunc("POST /api/v1/synchronizer/schema", syncronizer.Schema)
+	mux.HandleFunc("POST /api/v1/synchronizer/filter/validate", syncronizer.ValidateFilters)
+	mux.HandleFunc("POST /api/v1/synchronizer/data", syncronizer.Data)
 
 	srv := &http.Server{
 		Addr:    ":" + port,

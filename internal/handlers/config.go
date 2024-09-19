@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/tommyhedley/fiberytsheets/internal/utils"
@@ -16,6 +15,22 @@ type Authentication struct {
 
 type ResponsibleFor struct {
 	DataSynchronization bool `json:"dataSynchronization"`
+	Automations         bool `json:"automations"`
+}
+
+type Action struct {
+	Action      string `json:"action"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Args        []Arg  `json:"args"`
+}
+
+type Arg struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Description  string `json:"description,omitempty"`
+	Type         string `json:"type"`
+	TextTemplate bool   `json:"textTemplateSupported,omitempty"`
 }
 
 type AppConfig struct {
@@ -26,13 +41,14 @@ type AppConfig struct {
 	Authentication []Authentication `json:"authentication"`
 	Sources        []string         `json:"sources"`
 	ResponsibleFor ResponsibleFor   `json:"responsibleFor"`
+	Actions        []Action         `json:"actions"`
 }
 
 type Oauth2Fields struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Type        string `json:"type"`
-	Id          string `json:"id"`
+	ID          string `json:"id"`
 }
 
 func Config(w http.ResponseWriter, r *http.Request) {
@@ -40,14 +56,14 @@ func Config(w http.ResponseWriter, r *http.Request) {
 		Title:       "callback_uri",
 		Description: "OAuth post-auth redirect URI",
 		Type:        "oauth",
-		Id:          "callback_uri",
+		ID:          "callback_uri",
 	}
 
 	config := AppConfig{
 		ID:          "qbtime",
 		Name:        "Quickbooks Time",
-		Version:     "0.1.0",
-		Description: "Integrate Quickbooks Time with Fibery",
+		Version:     "0.1.6",
+		Description: "Integrate Quickbooks Time data with Fibery",
 		Authentication: []Authentication{
 			{
 				ID:          "oauth2",
@@ -59,9 +75,39 @@ func Config(w http.ResponseWriter, r *http.Request) {
 		Sources: []string{},
 		ResponsibleFor: ResponsibleFor{
 			DataSynchronization: true,
+			Automations:         true,
+		},
+		Actions: []Action{
+			{
+				Action:      "createUser",
+				Name:        "Create User",
+				Description: "Create a new Quickbooks Time user",
+				Args: []Arg{
+					{
+						ID:           "name",
+						Name:         "Name",
+						Type:         "text",
+						Description:  "Full Name",
+						TextTemplate: true,
+					},
+					{
+						ID:           "email",
+						Name:         "Email",
+						Type:         "text",
+						Description:  "Email",
+						TextTemplate: true,
+					},
+					{
+						ID:           "groupID",
+						Name:         "Group ID",
+						Type:         "text",
+						Description:  "Group ID",
+						TextTemplate: true,
+					},
+				},
+			},
 		},
 	}
 
 	utils.RespondWithJSON(w, http.StatusOK, config)
-	fmt.Println("Config Returned")
 }

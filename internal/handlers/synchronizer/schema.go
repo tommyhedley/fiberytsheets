@@ -100,7 +100,7 @@ func Schema(w http.ResponseWriter, r *http.Request) {
 				Name:          "Group",
 				TargetName:    "Users",
 				TargetType:    "group",
-				TargetFieldID: "timeId",
+				TargetFieldID: "id",
 			},
 		},
 	}

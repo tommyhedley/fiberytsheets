@@ -92,11 +92,12 @@ func Data(w http.ResponseWriter, r *http.Request) {
 			LastName   string      `json:"last_name"`
 			Active     bool        `json:"active"`
 			LastActive string      `json:"last_active"`
-			GroupId    json.Number `json:"group_id" type:"string"`
+			GroupID    json.Number `json:"group_id" type:"string"`
 			Email      string      `json:"email"`
 		}
 
 		type item struct {
+			Id         string `json:"id"`
 			TimeID     string `json:"timeId"`
 			DiplayName string `json:"display_name"`
 			FirstName  string `json:"first_name"`
@@ -105,6 +106,7 @@ func Data(w http.ResponseWriter, r *http.Request) {
 			Email      string `json:"email"`
 			LastActive string `json:"last_active"`
 			SyncAction string `json:"__syncAction,omitempty"`
+			GroupID    string `json:"group_id"`
 		}
 
 		userReq := userRequest{
@@ -129,6 +131,7 @@ func Data(w http.ResponseWriter, r *http.Request) {
 		for _, user := range users {
 			if sync == "full" {
 				items = append(items, item{
+					Id:         user.Id.String(),
 					TimeID:     user.Id.String(),
 					DiplayName: user.Name,
 					FirstName:  user.FirstName,
@@ -136,9 +139,11 @@ func Data(w http.ResponseWriter, r *http.Request) {
 					Active:     user.Active,
 					Email:      user.Email,
 					LastActive: user.LastActive,
+					GroupID:    user.GroupID.String(),
 				})
 			} else {
 				items = append(items, item{
+					Id:         user.Id.String(),
 					TimeID:     user.Id.String(),
 					DiplayName: user.Name,
 					FirstName:  user.FirstName,
@@ -146,6 +151,7 @@ func Data(w http.ResponseWriter, r *http.Request) {
 					Active:     user.Active,
 					Email:      user.Email,
 					LastActive: user.LastActive,
+					GroupID:    user.GroupID.String(),
 					SyncAction: "SET",
 				})
 			}
@@ -180,6 +186,7 @@ func Data(w http.ResponseWriter, r *http.Request) {
 		}
 
 		type item struct {
+			Id         string `json:"id"`
 			TimeID     string `json:"timeId"`
 			Name       string `json:"name"`
 			Active     bool   `json:"active"`
@@ -207,12 +214,14 @@ func Data(w http.ResponseWriter, r *http.Request) {
 		for _, group := range groups {
 			if sync == "full" {
 				items = append(items, item{
+					Id:     group.Id.String(),
 					TimeID: group.Id.String(),
 					Name:   group.Name,
 					Active: group.Active,
 				})
 			} else {
 				items = append(items, item{
+					Id:         group.Id.String(),
 					TimeID:     group.Id.String(),
 					Name:       group.Name,
 					Active:     group.Active,

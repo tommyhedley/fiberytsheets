@@ -1,4 +1,4 @@
-package syncronizer
+package synchronizer
 
 import (
 	"encoding/json"
@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/tommyhedley/fiberytsheets/internal/lib/tsheets"
 	"github.com/tommyhedley/fiberytsheets/internal/utils"
 )
 
@@ -54,6 +53,11 @@ func Data(w http.ResponseWriter, r *http.Request) {
 		lastSyncronized = lastSyncronizedTime.Format("2006-01-02T15:04:05-07:00")
 	}
 
+	sync := "delta"
+	if lastSyncronized == "" {
+		sync = "full"
+	}
+
 	var page int
 
 	if params.Pagination.NextPageConfig.Page == 0 {
@@ -64,10 +68,6 @@ func Data(w http.ResponseWriter, r *http.Request) {
 
 	switch params.RequestedType {
 	case "user":
-		sync := "delta"
-		if lastSyncronized == "" {
-			sync = "full"
-		}
 		var active string
 
 		if val, ok := params.Filter["inactiveUsers"].(bool); ok {
@@ -78,14 +78,43 @@ func Data(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		request := tsheets.UserRequest{
+		type userRequest struct {
+			Active           string `url:"active"`
+			Page             int    `url:"page"`
+			SupplementalData string `url:"supplemental_data"`
+			ModifiedSince    string `url:"modified_since,omitempty"`
+		}
+
+		type userResponse struct {
+			Id         json.Number `json:"id" type:"string"`
+			Name       string      `json:"display_name"`
+			FirstName  string      `json:"first_name"`
+			LastName   string      `json:"last_name"`
+			Active     bool        `json:"active"`
+			LastActive string      `json:"last_active"`
+			GroupId    json.Number `json:"group_id" type:"string"`
+			Email      string      `json:"email"`
+		}
+
+		type item struct {
+			TimeID     string `json:"timeId"`
+			DiplayName string `json:"display_name"`
+			FirstName  string `json:"first_name"`
+			LastName   string `json:"last_name"`
+			Active     bool   `json:"active"`
+			Email      string `json:"email"`
+			LastActive string `json:"last_active"`
+			SyncAction string `json:"__syncAction,omitempty"`
+		}
+
+		userReq := userRequest{
 			Active:           active,
 			Page:             page,
 			SupplementalData: "no",
 			ModifiedSince:    lastSyncronized,
 		}
 
-		items, more, requestError := request.GetUsers("https://rest.tsheets.com/api/v1/users", params.Account.AccessToken)
+		users, more, requestError := utils.GetData[userRequest, userResponse](&userReq, "https://rest.tsheets.com/api/v1/users", params.Account.AccessToken, "users")
 		if requestError.Err != nil {
 			if requestError.RateLimit {
 				utils.RespondWithTryLater(w, http.StatusTooManyRequests, fmt.Sprintf("rate limit reached: %v", requestError.Err))
@@ -95,7 +124,34 @@ func Data(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		resp := response[tsheets.UserResponse]{
+		var items []item
+
+		for _, user := range users {
+			if sync == "full" {
+				items = append(items, item{
+					TimeID:     user.Id.String(),
+					DiplayName: user.Name,
+					FirstName:  user.FirstName,
+					LastName:   user.LastName,
+					Active:     user.Active,
+					Email:      user.Email,
+					LastActive: user.LastActive,
+				})
+			} else {
+				items = append(items, item{
+					TimeID:     user.Id.String(),
+					DiplayName: user.Name,
+					FirstName:  user.FirstName,
+					LastName:   user.LastName,
+					Active:     user.Active,
+					Email:      user.Email,
+					LastActive: user.LastActive,
+					SyncAction: "SET",
+				})
+			}
+		}
+
+		resp := response[item]{
 			Items: items,
 			Pagination: pagination{
 				HasNext: more,
@@ -109,17 +165,34 @@ func Data(w http.ResponseWriter, r *http.Request) {
 		utils.RespondWithJSON(w, http.StatusOK, resp)
 		return
 	case "group":
-		sync := "delta"
-		if lastSyncronized == "" {
-			sync = "full"
+		type groupRequest struct {
+			Active           string `url:"active,omitempty"`
+			Page             int    `url:"page"`
+			SupplementalData string `url:"supplemental_data"`
+			ModifiedSince    string `url:"modified_since,omitempty"`
 		}
-		request := tsheets.GroupRequest{
+
+		type groupResponse struct {
+			Id         json.Number `json:"id" type:"string"`
+			Name       string      `json:"name"`
+			Active     bool        `json:"active"`
+			SyncAction string      `json:"__syncAction,omitempty"`
+		}
+
+		type item struct {
+			TimeID     string `json:"timeId"`
+			Name       string `json:"name"`
+			Active     bool   `json:"active"`
+			SyncAction string `json:"__syncAction,omitempty"`
+		}
+
+		groupReq := groupRequest{
 			Page:             page,
 			SupplementalData: "no",
 			ModifiedSince:    lastSyncronized,
 		}
 
-		items, more, requestError := request.GetGroups("https://rest.tsheets.com/api/v1/groups", params.Account.AccessToken)
+		groups, more, requestError := utils.GetData[groupRequest, groupResponse](&groupReq, "https://rest.tsheets.com/api/v1/groups", params.Account.AccessToken, "groups")
 		if requestError.Err != nil {
 			if requestError.RateLimit {
 				utils.RespondWithTryLater(w, http.StatusTooManyRequests, fmt.Sprintf("rate limit reached: %v", requestError.Err))
@@ -129,7 +202,26 @@ func Data(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		resp := response[tsheets.GroupResponse]{
+		var items []item
+
+		for _, group := range groups {
+			if sync == "full" {
+				items = append(items, item{
+					TimeID: group.Id.String(),
+					Name:   group.Name,
+					Active: group.Active,
+				})
+			} else {
+				items = append(items, item{
+					TimeID:     group.Id.String(),
+					Name:       group.Name,
+					Active:     group.Active,
+					SyncAction: "SET",
+				})
+			}
+		}
+
+		resp := response[item]{
 			Items: items,
 			Pagination: pagination{
 				HasNext: more,

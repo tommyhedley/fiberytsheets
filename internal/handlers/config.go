@@ -62,7 +62,7 @@ func Config(w http.ResponseWriter, r *http.Request) {
 	config := AppConfig{
 		ID:          "qbtime",
 		Name:        "Quickbooks Time",
-		Version:     "0.1.6",
+		Version:     "0.1.7",
 		Description: "Integrate Quickbooks Time data with Fibery",
 		Authentication: []Authentication{
 			{

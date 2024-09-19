@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/google/go-querystring/query"
 )
@@ -51,7 +52,8 @@ func (rd *ResponseData[T]) ExtractItems() ([]T, bool) {
 	return items, rd.More
 }
 
-func GetData[Req any, Res any](params Req, URL, token string, fieldName string) ([]Res, bool, *RequestError) {
+func GetData[Req any, Res any](params *Req, URL, token string, fieldName string) ([]Res, bool, *RequestError) {
+	start := time.Now()
 	// Build the request URL with query parameters
 	baseURL, err := url.Parse(URL)
 	if err != nil {
@@ -73,12 +75,18 @@ func GetData[Req any, Res any](params Req, URL, token string, fieldName string) 
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
 
+	fmt.Printf("%s data request build time: %s\n", fieldName, time.Since(start))
+	start = time.Now()
+
 	// Execute the HTTP request
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, false, NewRequestError(fmt.Errorf("error executing request: %w", err), false)
 	}
 	defer res.Body.Close()
+
+	fmt.Printf("%s data response time: %s\n", fieldName, time.Since(start))
+	start = time.Now()
 
 	// Handle HTTP errors
 	if res.StatusCode > 299 {
@@ -97,5 +105,6 @@ func GetData[Req any, Res any](params Req, URL, token string, fieldName string) 
 
 	// Extract items from the response
 	items, more := response.ExtractItems()
-	return items, more, nil
+	fmt.Printf("%s data request completion time: %s\n", fieldName, time.Since(start))
+	return items, more, NewRequestError(nil, false)
 }

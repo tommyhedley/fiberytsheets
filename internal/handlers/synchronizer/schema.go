@@ -1,4 +1,4 @@
-package syncronizer
+package synchronizer
 
 import (
 	"encoding/json"
@@ -57,6 +57,11 @@ func Schema(w http.ResponseWriter, r *http.Request) {
 			Name: "Id",
 			Type: "id",
 		},
+		"timeId": {
+			Name:     "Time ID",
+			Type:     "text",
+			ReadOnly: true,
+		},
 		"display_name": {
 			Name:    "Name",
 			Type:    "text",
@@ -95,7 +100,7 @@ func Schema(w http.ResponseWriter, r *http.Request) {
 				Name:          "Group",
 				TargetName:    "Users",
 				TargetType:    "group",
-				TargetFieldID: "id",
+				TargetFieldID: "timeId",
 			},
 		},
 	}
@@ -104,6 +109,11 @@ func Schema(w http.ResponseWriter, r *http.Request) {
 		"id": {
 			Name: "Id",
 			Type: "id",
+		},
+		"timeId": {
+			Name:     "Time ID",
+			Type:     "text",
+			ReadOnly: true,
 		},
 		"name": {
 			Name: "Name",

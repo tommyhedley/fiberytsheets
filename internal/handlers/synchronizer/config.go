@@ -1,4 +1,4 @@
-package syncronizer
+package synchronizer
 
 import (
 	"encoding/json"
